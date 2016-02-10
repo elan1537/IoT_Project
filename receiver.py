@@ -3,8 +3,8 @@
 
     1. GND => 9
     2. 3V3 => 1
-    3. CE => 24
-    4. CSN => 22
+    3. CE => 26
+    4. CSN => 28
     5. SCKL => 23
     6. MOSI => 19
     7. MISO => 21
@@ -22,8 +22,8 @@ pipes = [[0xe7, 0xe7, 0xe7, 0xe7, 0xe7], [0xc2, 0xc2, 0xc2, 0xc2, 0xc2]]
 
 GPIO.setmode(GPIO.BCM)
 
-radio = NRF24(GPIO, spidev.Spidev())
-radio.begin(25, 8)
+radio = NRF24(GPIO, spidev.SpiDev())
+radio.begin(1, 7)
 radio.setPayloadSize(32)
 radio.setChannel(0x60)
 
@@ -35,3 +35,26 @@ radio.enableAckPayload()
 
 radio.openReadingPipe(1, pipes[1])
 radio.printDetails()
+
+radio.startListening()
+
+while True:
+    ackPL = [1]
+
+    while not radio.available(1):
+        time.sleep(100)
+
+    receivedMessage = []
+    radio.read(receivedMessage, radio.getDynamicPayloadSize())
+    print("Received {}".format(receivedMessage))
+
+    print("Translating the receivedMessage into unicode characters...")
+    string = ""
+
+    for i in receivedMessage:
+        if 32 <= i <= 126:
+            string += chr(i)
+    print(string)
+
+    radio.writeAckPayload(1, ackPL, len(ackPL))
+    print("Loaded payload reply of {}".format(ackPL))
